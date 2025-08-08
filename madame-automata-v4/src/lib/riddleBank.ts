@@ -1,0 +1,1 @@
+export const RIDDLES = [{q:'I bind but do not touch, I tame without rope. What am I?',a:'consent',h:'Consent makes scenes possible.'},{q:'I reward and I correct, yet I am not a person. What am I?',a:'contract',h:'Written or spoken, we agreed.'},{q:'I am used to pause when things go too far. What am I?',a:'safeword',h:'Short, clear, and respected.'}];

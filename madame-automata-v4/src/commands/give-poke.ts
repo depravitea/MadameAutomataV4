@@ -1,0 +1,1 @@
+import { SlashCommandBuilder } from 'discord.js'; export const data=new SlashCommandBuilder().setName('give-poke').setDescription('Poke someone').addUserOption(o=>o.setName('user').setDescription('Target').setRequired(true)); export async function execute(i){ const u=i.options.getUser('user',true); await i.reply({ content:`${i.user} pokes ${u}.`}); }
