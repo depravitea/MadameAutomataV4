@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* NEW: types for the offer flows */
 enum PendingType {
   own
   protect
@@ -57,7 +56,7 @@ model Relationship {
   guildId   String
   domId     String
   subId     String
-  status    String            // e.g. "active", "consider"
+  status    String
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -81,12 +80,12 @@ model Punishment {
 model Task {
   id        String   @id @default(cuid())
   guildId   String
-  assignee  String           // sub
-  assigner  String           // domme
+  assignee  String
+  assigner  String
   title     String
   dueAt     DateTime?
   doneAt    DateTime?
-  warnedAt  DateTime?        // NEW: for “due soon” ping tracking
+  warnedAt  DateTime?
   createdAt DateTime @default(now())
   guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 }
@@ -106,8 +105,8 @@ model Contract {
   guildId   String
   domId     String
   subId     String
-  terms     String            // can be long; ok as plain String
-  status    String            // "active", "ended", etc.
+  terms     String
+  status    String
   createdAt DateTime @default(now())
   guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 }
@@ -116,7 +115,7 @@ model Consent {
   id        String   @id @default(cuid())
   guildId   String
   userId    String
-  limits    String            // we use "PROTECTED" to mean protected
+  limits    String
   createdAt DateTime @default(now())
   guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 }
@@ -124,10 +123,124 @@ model Consent {
 model Profile {
   id            String  @id
   guildId       String
-  userId        String  @unique   // NEW: needed for upsert-by-user
+  userId        String  @unique
   xp            Int     @default(0)
   gems          Int     @default(0)
   simpCount     Int     @default(0)
   bratScore     Int     @default(0)
 
-  // NEW: shown in user p
+  about         String?
+  limits        String?
+  kinks         String?
+  title         String?
+
+  starCount     Int     @default(0)
+  jailedCount   Int     @default(0)
+  praiseCount   Int     @default(0)
+  worshipCount  Int     @default(0)
+  tasksDone     Int     @default(0)
+  dynamicsEnded Int     @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  id      String  @id @default(cuid())
+  guildId String
+  key     String
+  enabled Boolean @default(false)
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  @@unique([guildId, key])
+}
+
+model Jail {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  locked    Boolean  @default(true)
+  reason    String?
+  createdAt DateTime @default(now())
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model EconomyTx {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  kind      String
+  amount    Int
+  meta      String?
+  createdAt DateTime @default(now())
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model Riddle {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  question  String
+  answer    String
+  hint      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model LogEntry {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  content   String
+  private   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model QuizResult {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  result    String
+  createdAt DateTime @default(now())
+  guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model PendingRequest {
+  id        String      @id @default(cuid())
+  guildId   String
+  type      PendingType
+  domId     String
+  subId     String
+  payload   String      @default("{}")
+  createdAt DateTime    @default(now())
+}
+
+model Praise {
+  id        String   @id @default(cuid())
+  guildId   String
+  domId     String
+  subId     String
+  note      String
+  createdAt DateTime  @default(now())
+}
+
+model Worship {
+  id        String   @id @default(cuid())
+  guildId   String
+  domId     String
+  subId     String
+  text      String
+  createdAt DateTime  @default(now())
+}
+
+model GoldStar {
+  id        String   @id @default(cuid())
+  guildId   String
+  domId     String
+  subId     String
+  delta     Int
+  reason    String?
+  createdAt DateTime  @default(now())
+}
