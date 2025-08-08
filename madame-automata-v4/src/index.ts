@@ -1,3 +1,12 @@
+import http from 'node:http';
+
+const port = Number(process.env.PORT || 3000);
+http.createServer((_, res) => {
+  res.statusCode = 200;
+  res.end('ok');
+}).listen(port, () => {
+  console.log('HTTP keepalive on :' + port);
+});
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { buildClient } from './lib/client.js';
