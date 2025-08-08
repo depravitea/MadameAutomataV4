@@ -9,8 +9,6 @@
   "build": "tsc -p .",
   "postinstall": "prisma generate",
   "start": "prisma db push --accept-data-loss && tsx src/registerCommands.ts && node dist/index.js"
-}
-
     "register": "tsx src/registerCommands.ts",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"
