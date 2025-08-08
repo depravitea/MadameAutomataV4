@@ -1,1 +1,3 @@
-import { SlashCommandBuilder } from 'discord.js'; export const data=new SlashCommandBuilder().setName('view-help').setDescription('Show bot help'); export async function execute(i){ await i.reply({ content:'Use /help for the categorized menu.', ephemeral:true}); }
+import { SlashCommandBuilder } from 'discord.js';
+export const data=new SlashCommandBuilder().setName('view-help').setDescription('Show bot help');
+export async function execute(i:any){ await i.reply({ content:'Use /help for the categorized menu.', ephemeral:true}); }

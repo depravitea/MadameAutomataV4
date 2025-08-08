@@ -1,0 +1,3 @@
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+export const data=new SlashCommandBuilder().setName('punish-bondage').setDescription('Apply a restrictive role').addUserOption(o=>o.setName('target').setDescription('User').setRequired(true)).addRoleOption(o=>o.setName('role').setDescription('Restrictive role').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles);
+export async function execute(i:any){ const t=i.options.getUser('target',true); const role=i.options.getRole('role',true) as any; const m=await i.guild.members.fetch(t.id); await m.roles.add(role.id).catch(()=>{}); await i.reply({ content:`${t} is bound with ${role}.`}); }

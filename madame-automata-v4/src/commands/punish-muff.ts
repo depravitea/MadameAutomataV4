@@ -1,0 +1,3 @@
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+export const data=new SlashCommandBuilder().setName('punish-muff').setDescription('Temporary timeout (minutes)').addUserOption(o=>o.setName('target').setDescription('User').setRequired(true)).addIntegerOption(o=>o.setName('minutes').setDescription('Minutes').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers);
+export async function execute(i:any){ const t=i.options.getUser('target',true); const minutes=i.options.getInteger('minutes',true); const m=await i.guild.members.fetch(t.id); await m.timeout(minutes*60*1000, 'Muffled').catch(()=>{}); await i.reply({ content:`${t} is muffled for ${minutes} minute(s).`}); }
