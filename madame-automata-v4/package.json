@@ -2,13 +2,13 @@
   "name": "madame-automata",
   "version": "1.0.0",
   "private": true,
-  "description": "Madame Automata \u2014 Gothic Romance femdom-focused Discord bot.",
+  "description": "Madame Automata — Gothic Romance femdom-focused Discord bot.",
   "main": "dist/index.js",
   "type": "module",
-"scripts": {
-  "build": "tsc -p .",
-  "postinstall": "prisma generate",
-  "start": "prisma db push --accept-data-loss && tsx src/registerCommands.ts && node dist/index.js"
+  "scripts": {
+    "build": "tsc -p .",
+    "postinstall": "prisma generate",
+    "start": "prisma db push --accept-data-loss && tsx src/registerCommands.ts && node dist/index.js",
     "register": "tsx src/registerCommands.ts",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"
@@ -17,12 +17,12 @@
     "node": ">=20.10.0"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dayjs": "^1.11.13",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
-    "@prisma/client": "^5.22.0",
-    "zod": "^3.23.8",
-    "dayjs": "^1.11.13",
-    "pino": "^9.5.0"
+    "pino": "^9.5.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "prisma": "^5.22.0",
