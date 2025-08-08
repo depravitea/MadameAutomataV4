@@ -14,7 +14,11 @@ export async function execute(i: any) {
   }
 
   const idx = Math.floor(Math.random() * bank.length);
-  const pick = bank[idx]; // safe because we checked length
+  const pick = bank.at(idx);            // <- returns T | undefined
+  if (!pick) {                          // <- narrows to defined
+    await i.reply({ content: 'No riddle could be chosen.', ephemeral: true });
+    return;
+  }
 
   await prisma.riddle.create({
     data: {
