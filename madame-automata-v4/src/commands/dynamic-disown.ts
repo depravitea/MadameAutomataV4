@@ -1,4 +1,0 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
-import { prisma } from '../lib/db.js';
-export const data=new SlashCommandBuilder().setName('dynamic-disown').setDescription('Release ownership').addUserOption(o=>o.setName('sub').setDescription('Submissive').setRequired(true)).setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
-export async function execute(i:any){ const dom=i.user; const sub=i.options.getUser('sub',true); const rel=await prisma.relationship.findFirst({ where:{ guildId:i.guildId!, domId:dom.id, subId:sub.id, status:'active' } }); if(!rel) return i.reply({ content:'No active ownership found.',ephemeral:true}); await prisma.relationship.update({ where:{ id:rel.id }, data:{ status:'released' } }); await i.reply({ content:`${sub} is released.` }); }

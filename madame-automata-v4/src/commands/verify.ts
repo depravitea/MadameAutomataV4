@@ -1,1 +1,0 @@
-import { SlashCommandBuilder } from 'discord.js'; export const data=new SlashCommandBuilder().setName('verify').setDescription('Run the consent & age gate'); export async function execute(i){ await i.reply({ content:'Confirm 18+ and rules read. React ✅ to gain access.', ephemeral:true }); }
