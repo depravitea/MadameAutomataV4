@@ -1,5 +1,5 @@
 
-from .db import Session, Config
+from ..db import Session, Config
 from sqlalchemy import select
 from discord import Member
 
