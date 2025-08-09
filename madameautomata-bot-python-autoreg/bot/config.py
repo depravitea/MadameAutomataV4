@@ -1,7 +1,7 @@
-
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 class Settings(BaseModel):
@@ -10,7 +10,8 @@ class Settings(BaseModel):
     guild_id: str = os.getenv("DISCORD_GUILD_ID", "")
     database_url: str = os.getenv("DATABASE_URL", "")
 
-settings = Settings()
+    # NEW: flags for auto-registration
+    register_on_boot: bool = os.getenv("REGISTER_ON_BOOT", "true").lower() in ("1", "true", "yes")
+    register_global: bool = os.getenv("REGISTER_GLOBAL", "false").lower() in ("1", "true", "yes")
 
-settings.register_on_boot = os.getenv('REGISTER_ON_BOOT', 'true').lower() in ('1','true','yes')
-settings.register_global = os.getenv('REGISTER_GLOBAL', 'false').lower() in ('1','true','yes')
+settings = Settings()
