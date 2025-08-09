@@ -1,107 +1,118 @@
-
 import discord
 from discord import app_commands, Interaction
 from ..theme import gothic_embed
-from ..util.perm import is_domme, is_staff, is_sub
-from ..db import Session, User, Collaring, Cage, JailSession, Star, Task, Worship, Config, CollarType, StarStatus
-from ..util.time import parse_duration, random_case
+from ..util.perm import is_domme
+from ..db import Session, Task, Config
 from ..util.ids import cuid
 from datetime import datetime, timedelta
-from sqlalchemy import select, func, update, and_
+import re
 
-def setup(bot):
-    @bot.tree.command(name="task", description="Assign a task to a sub (role-wide TBD).")
-    @app_commands.describe(sub="Assignee (pick a sub)", title="Short title", details="Details / checklist", deadline="Relative time like 12h or 2d")
-    async def task(i: Interaction, sub: discord.User | None, title: str, details: str | None = None, deadline: str | None = None):
-        member = i.guild.get_member(i.user.id)
+def setup(bot: discord.Client):
+    @bot.tree.command(
+        name="task",
+        description="Assign a task to a sub or blast to the @taskslut role (leave sub empty)."
+    )
+    @app_commands.describe(
+        sub="Assignee (leave empty to blast to @taskslut)",
+        title="Short title",
+        details="Details / checklist",
+        deadline="Relative time (e.g., 12h or 2d)"
+    )
+    async def task(
+        i: Interaction,
+        sub: discord.User | None = None,
+        title: str = "",
+        details: str | None = None,
+        deadline: str | None = None
+    ):
+        # Permission: Dommes only
+        member = i.guild.get_member(i.user.id) if i.guild else None
         if not await is_domme(member):
             return await i.response.send_message("Only Dommes can use this.", ephemeral=True)
 
-        due_at = None
+        # Parse optional relative deadline
+        due_at: datetime | None = None
         if deadline:
-            import re, time
             m = re.fullmatch(r'(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', deadline.strip(), re.I)
             if m:
-                d,h,mi = (int(x) if x else 0 for x in m.groups())
-                secs = (((d*24 + h)*60) + mi)*60
-                if secs>0:
-                    from datetime import datetime, timedelta
+                d, h, mi = (int(x) if x else 0 for x in m.groups())
+                secs = (((d * 24 + h) * 60) + mi) * 60
+                if secs > 0:
                     due_at = datetime.utcnow() + timedelta(seconds=secs)
 
+        # Single‑sub assignment
+        if sub is not None:
+            async with Session() as s:
+                t = Task(
+                    id=cuid(),
+                    owner_id=str(i.user.id),
+                    assignee_id=str(sub.id),
+                    title=title,
+                    details=details,
+                    due_at=due_at
+                )
+                s.add(t)
+                await s.commit()
+                task_id = t.id
 
-if sub is None:
-    # Role-wide blast to @taskslut
-    async with Session() as s:
-        cfg = await s.get(Config, 1)
-    if not cfg or not cfg.taskslut_role_id:
-        return await i.response.send_message("No TaskSlut role configured. Use /setup_set_role key:TaskSlut first.", ephemeral=True)
-    role = i.guild.get_role(int(cfg.taskslut_role_id))
-    if not role:
-        return await i.response.send_message("TaskSlut role ID is invalid in this server.", ephemeral=True)
-    members = [m for m in role.members if not m.bot]
-    if not members:
-        return await i.response.send_message("No human members have the TaskSlut role.", ephemeral=True)
+            # DM the sub with Accept button
+            view = discord.ui.View(timeout=600)
 
-    created = []
-    async with Session() as s:
-        for m in members:
-            t = Task(id=cuid(), owner_id=i.user.id, assignee_id=str(m.id), title=title, details=details, due_at=due_at)
-            s.add(t)
-            created.append(t)
-        await s.commit()
-
-    # DM each sub a task with an Accept button
-    accepted_count = 0
-    for t in created:
-        try:
-            user = await i.client.fetch_user(int(t.assignee_id))
-            view = discord.ui.View()
-            async def make_cb(tid):
-                async def accept_cb(interaction: discord.Interaction):
-                    if interaction.user.id != int(t.assignee_id):
-                        return await interaction.response.send_message("Only the assignee can accept.", ephemeral=True)
-                    async with Session() as s2:
-                        tt = await s2.get(Task, tid)
+            async def accept_cb(interaction: discord.Interaction, _task_id=task_id, _sub_id=sub.id, _title=title):
+                if interaction.user.id != _sub_id:
+                    return await interaction.response.send_message("Only the assignee can accept.", ephemeral=True)
+                async with Session() as s:
+                    tt = await s.get(Task, _task_id)
+                    if tt:
                         tt.accepted = True
-                        await s2.commit()
-                    await interaction.response.edit_message(embed=gothic_embed("Task Accepted", f"Task **{title}** accepted."), view=None)
-                return accept_cb
+                        await s.commit()
+                await interaction.response.edit_message(
+                    embed=gothic_embed("Task Accepted", f"Task **{_title}** accepted by <@{_sub_id}>."),
+                    view=None
+                )
+
             btn = discord.ui.Button(label="Accept Task", style=discord.ButtonStyle.success)
-            btn.callback = await make_cb(t.id)
+            btn.callback = accept_cb
             view.add_item(btn)
-            body = f"You were assigned: **{title}**\n{details or ''}"
+
+            body = f"**<@{sub.id}>** {title}\n{details or ''}"
             if due_at:
                 body += f"\nDue: <t:{int(due_at.timestamp())}:R>"
-            await user.send(embed=gothic_embed("New Task", body), view=view)
-        except Exception:
-            pass
 
-    # Announce in channel & ping role
-    announce = f"Assigned **{len(created)}** tasks to {role.mention}. Each sub received a DM with an Accept button."
-    await i.response.send_message(embed=gothic_embed("Task Blast", announce))
-    return
+            # Try DM; if blocked, post in-channel
+            try:
+                dm = await sub.create_dm()
+                await dm.send(embed=gothic_embed("Task Assigned", body), view=view)
+                await i.response.send_message(
+                    embed=gothic_embed("Task Assigned", f"Sent to <@{sub.id}> via DM."), ephemeral=True
+                )
+            except Exception:
+                await i.response.send_message(embed=gothic_embed("Task Assigned", body), view=view)
 
+            return  # end single‑sub path
+
+        # Role‑blast to @taskslut
+        # Load config for the TaskSlut role
         async with Session() as s:
-            t = Task(id=cuid(), owner_id=i.user.id, assignee_id=sub.id, title=title, details=details, due_at=due_at)
-            s.add(t)
-            await s.commit()
-            task_id = t.id
+            cfg = await s.get(Config, 1)
+        if not cfg or not cfg.taskslut_role_id:
+            return await i.response.send_message(
+                "No TaskSlut role is configured. Run `/setup_set_role key:TaskSlut role:@taskslut` first.",
+                ephemeral=True
+            )
 
-        view = discord.ui.View()
-        async def accept_cb(interaction: discord.Interaction):
-            if interaction.user.id != sub.id:
-                return await interaction.response.send_message("Only the assignee can accept.", ephemeral=True)
-            async with Session() as s:
-                tt = await s.get(Task, task_id)
-                tt.accepted = True
-                await s.commit()
-            await interaction.response.edit_message(embed=gothic_embed("Task Accepted", f"Task **{title}** accepted by <@{sub.id}>."), view=None)
+        role = i.guild.get_role(int(cfg.taskslut_role_id))
+        if not role:
+            return await i.response.send_message("Configured TaskSlut role not found on this server.", ephemeral=True)
 
-        btn = discord.ui.Button(label="Accept Task", style=discord.ButtonStyle.success)
-        btn.callback = accept_cb
-        view.add_item(btn)
-
-        body = f"**<@{sub.id}>** {title}\n{details or ''}"
-        if due_at:
-            body += f"\nDue: <t:{int(due_at.timestamp())}:R>"
-        await i.response.send_message(embed=gothic_embed("Task Assigned", body), view=view)
+        # Create tasks for each eligible member
+        created: list[tuple[int, str]] = []  # (user_id, task_id)
+        async with Session() as s:
+            for m in role.members:
+                if m.bot:
+                    continue
+                t = Task(
+                    id=cuid(),
+                    owner_id=str(i.user.id),
+                    assignee_id=str(m.id),
+                    tit
