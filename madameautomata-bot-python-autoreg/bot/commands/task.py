@@ -1,11 +1,14 @@
+import re
+from datetime import datetime, timedelta
+
 import discord
 from discord import app_commands, Interaction
-from ..theme import gothic_embed
-from ..util.perm import is_domme
+
 from ..db import Session, Task, Config
+from ..theme import gothic_embed
 from ..util.ids import cuid
-from datetime import datetime, timedelta
-import re
+from ..util.perm import is_domme
+
 
 def setup(bot: discord.Client):
     @bot.tree.command(
@@ -25,12 +28,12 @@ def setup(bot: discord.Client):
         details: str | None = None,
         deadline: str | None = None
     ):
-        # Permission: Dommes only
+        # Dommes only
         member = i.guild.get_member(i.user.id) if i.guild else None
         if not await is_domme(member):
             return await i.response.send_message("Only Dommes can use this.", ephemeral=True)
 
-        # Parse optional relative deadline
+        # Parse relative deadline
         due_at: datetime | None = None
         if deadline:
             m = re.fullmatch(r'(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?', deadline.strip(), re.I)
@@ -40,7 +43,7 @@ def setup(bot: discord.Client):
                 if secs > 0:
                     due_at = datetime.utcnow() + timedelta(seconds=secs)
 
-        # Single‑sub assignment
+        # SINGLE-SUB ASSIGNMENT
         if sub is not None:
             async with Session() as s:
                 t = Task(
@@ -49,13 +52,12 @@ def setup(bot: discord.Client):
                     assignee_id=str(sub.id),
                     title=title,
                     details=details,
-                    due_at=due_at
+                    due_at=due_at,
                 )
                 s.add(t)
                 await s.commit()
                 task_id = t.id
 
-            # DM the sub with Accept button
             view = discord.ui.View(timeout=600)
 
             async def accept_cb(interaction: discord.Interaction, _task_id=task_id, _sub_id=sub.id, _title=title):
@@ -88,11 +90,9 @@ def setup(bot: discord.Client):
                 )
             except Exception:
                 await i.response.send_message(embed=gothic_embed("Task Assigned", body), view=view)
+            return  # end single-sub path
 
-            return  # end single‑sub path
-
-        # Role‑blast to @taskslut
-        # Load config for the TaskSlut role
+        # ROLE-BLAST TO @taskslut
         async with Session() as s:
             cfg = await s.get(Config, 1)
         if not cfg or not cfg.taskslut_role_id:
@@ -115,4 +115,54 @@ def setup(bot: discord.Client):
                     id=cuid(),
                     owner_id=str(i.user.id),
                     assignee_id=str(m.id),
-                    tit
+                    title=title,
+                    details=details,
+                    due_at=due_at,
+                )
+                s.add(t)
+                created.append((m.id, t.id))
+            await s.commit()
+
+        # DM each member with Accept button; ignore DM failures
+        sent_count = 0
+        for uid, task_id in created:
+            # Prefer member from cache; fall back to fetch
+            user = i.guild.get_member(uid) or await i.client.fetch_user(uid)
+
+            view = discord.ui.View(timeout=600)
+
+            async def accept_cb(interaction: discord.Interaction, _task_id=task_id, _uid=uid, _title=title):
+                if interaction.user.id != _uid:
+                    return await interaction.response.send_message("Only the assignee can accept.", ephemeral=True)
+                async with Session() as s:
+                    tt = await s.get(Task, _task_id)
+                    if tt:
+                        tt.accepted = True
+                        await s.commit()
+                await interaction.response.edit_message(
+                    embed=gothic_embed("Task Accepted", f"Task **{_title}** accepted by <@{_uid}>."),
+                    view=None
+                )
+
+            btn = discord.ui.Button(label="Accept Task", style=discord.ButtonStyle.success)
+            btn.callback = accept_cb
+            view.add_item(btn)
+
+            body = f"**<@{uid}>** {title}\n{details or ''}"
+            if due_at:
+                body += f"\nDue: <t:{int(due_at.timestamp())}:R>"
+
+            try:
+                dm = await user.create_dm()
+                await dm.send(embed=gothic_embed("Task Assigned", body), view=view)
+                sent_count += 1
+            except Exception:
+                pass  # DMs closed; they can accept from channel summary
+
+        # Channel summary with role ping
+        summary = gothic_embed(
+            "Task Blast",
+            f"Assigned **{len(created)}** tasks to {role.mention}.\n"
+            f"DMs sent successfully to **{sent_count}** members. Others can accept here."
+        )
+        await i.response.send_message(embed=summary, allowed_mentions=discord.AllowedMentions(roles=True))
