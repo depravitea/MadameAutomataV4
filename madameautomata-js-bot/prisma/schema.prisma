@@ -1,0 +1,112 @@
+
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CollarType {
+  CONSIDERATION
+  TRAINING
+  PERMANENT
+}
+
+enum StarStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model User {
+  id              String   @id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  isDomme         Boolean  @default(false)
+  isSub           Boolean  @default(false)
+  titles          String?
+  about           String?
+  limits          String?
+  dommeXp         Int      @default(0)
+  dommeReleases   Int      @default(0)
+}
+
+model Collaring {
+  id        String     @id
+  dommeId   String
+  subId     String
+  type      CollarType
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  endedAt   DateTime?
+}
+
+model Cage {
+  id        String   @id
+  subId     String
+  dommeId   String
+  endsAt    DateTime
+  createdAt DateTime @default(now())
+  active    Boolean  @default(true)
+}
+
+model JailSession {
+  id           String   @id
+  subId        String
+  dommeId      String
+  brat         Boolean  @default(false)
+  sentenceText String
+  totalNeeded  Int
+  mistakes     Int      @default(0)
+  completed    Int      @default(0)
+  caseSeed     Int
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model Star {
+  id        String    @id
+  dommeId   String
+  subId     String
+  amount    Int
+  reason    String?
+  status    StarStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+}
+
+model Task {
+  id         String   @id
+  ownerId    String
+  assigneeId String
+  title      String
+  details    String?
+  dueAt      DateTime?
+  accepted   Boolean  @default(false)
+  completed  Boolean  @default(false)
+  approved   Boolean?
+  createdAt  DateTime @default(now())
+}
+
+model Worship {
+  id        String   @id
+  subId     String
+  dommeId   String?
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Config {
+  id                  Int     @id
+  dommeRoleId         String?
+  subRoleId           String?
+  taskSlutRoleId      String?
+  worshipMeRoleId     String?
+  staffRoleId         String?
+  jailChannelId       String?
+  bratJailChannelId   String?
+  worshipChannelId    String?
+  staffAlertsChannelId String?
+}
