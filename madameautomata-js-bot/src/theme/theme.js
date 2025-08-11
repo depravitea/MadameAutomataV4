@@ -8,7 +8,7 @@ const hexToInt = (hex) => parseInt(String(hex).replace(/^#/, ""), 16);
 export const GlobalTheme = {
   color: hexToInt("#B1B9D6"), // crimson velvet accent bar
   header: "⍣︶꒦꒷⍣☾ 𝐌𝐚𝐝𝐚𝐦𝐞 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐚 ☽⍣꒷꒦︶⍣",
-  footer: "⟢ crimson peak × nosferatu ⟣",
+  footer: "⟢ 𝐹𝜀𝑚𝜕𝜎𝑚 𝐸𝑚𝑝𝑦𝑟𝑒𝑎𝑛 ⟣",
   divider: "┈┈┈┈┈┈┈┈┈┈",
   bannerUrl:
     "https://i.imgur.com/DsAzT61.png", // global banner
