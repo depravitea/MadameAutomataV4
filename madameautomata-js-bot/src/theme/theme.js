@@ -6,10 +6,10 @@ const hexToInt = (hex) => parseInt(String(hex).replace(/^#/, ""), 16);
 
 // ---- EDIT THESE VALUES TO TEST YOUR LOOK -----------------------------------
 export const GlobalTheme = {
-  color: hexToInt("#4b0f1a"), // crimson velvet accent bar
+  color: hexToInt("#B1B9D6"), // crimson velvet accent bar
   header: "⍣︶꒦꒷⍣☾ 𝐌𝐚𝐝𝐚𝐦𝐞 𝐀𝐮𝐭𝐨𝐦𝐚𝐭𝐚 ☽⍣꒷꒦︶⍣",
-  footer: "⟢ 𝐹𝜀𝑚𝜕𝜎𝑚 𝐸𝑚𝑝𝑦𝑟𝑒𝑎𝑛 ⟣",
-  divider: "test",
+  footer: "⟢ crimson peak × nosferatu ⟣",
+  divider: "┈┈┈┈┈┈┈┈┈┈",
   bannerUrl:
     "https://i.imgur.com/DsAzT61.png", // global banner
   thumbnailUrl: "", // optional small square at top-right
@@ -21,6 +21,10 @@ export const GlobalTheme = {
   timestamp: true, // add timestamp to embeds by default
 };
 // ----------------------------------------------------------------------------
+
+// Back-compat: some commands import { Theme }.
+// This alias keeps them working with the new GlobalTheme.
+export const Theme = GlobalTheme;
 
 // build a Discord.js-compatible embed object from the global theme + overrides
 export function gothicEmbed(title = "", description = "", overrides = {}) {
@@ -44,3 +48,4 @@ export function gothicEmbed(title = "", description = "", overrides = {}) {
 // handy helpers if you want to tweak at runtime
 export const setGlobalTheme = (partial) => Object.assign(GlobalTheme, partial);
 export const hex = hexToInt;
+
