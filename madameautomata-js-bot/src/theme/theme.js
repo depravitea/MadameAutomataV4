@@ -14,7 +14,7 @@ export const Theme = {
     footer: "⟢ crimson peak × nosferatu ⟣",
     divider: "┈┈┈┈┈┈┈┈┈┈",
     watermark: "🦇",
-    bannerUrl: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1280&q=80&auto=format&fit=crop"
+    bannerUrl: "https://discord.com/channels/1126720995479261256/1404579157496827985/1404579184742891522"
   }
 };
 
